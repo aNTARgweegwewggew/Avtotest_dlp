@@ -1,0 +1,37 @@
+# === Секреты и токены — НИКОГДА не коммитить ===
+.env
+*.env
+credentials.json
+*_token.json
+token.json
+secrets.json
+*.pem
+*.key
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# === Виртуальное окружение ===
+.venv/
+venv/
+env/
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+
+# === Логи ===
+*.log
+
+# === ОС ===
+.DS_Store
+Thumbs.db
