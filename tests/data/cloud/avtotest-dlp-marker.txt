@@ -1,0 +1,3 @@
+AVTOTEST DLP cloud sample.
+Classification marker: secret password.
+This file contains no real credentials or personal information.

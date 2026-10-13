@@ -1,26 +1,50 @@
+"""Проверка загрузки, скачивания и удаления тестового файла Google Drive."""
+
+import logging
+import uuid
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from src.mail.google_drive_upload import upload_file
-from src.mail.get_file_in_path import get_files
+from src.mail.google_drive_download import download_file
+from src.mail.google_drive_upload import delete_file, upload_file
 
 
-TEST_FILES_DIR = Path(
-    "/home/user/test_yandex"
+logger = logging.getLogger(__name__)
+TEST_FILE = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "cloud"
+    / "avtotest-dlp-marker.txt"
 )
 
-GOOGLE_DRIVE_FOLDER_ID = (
-    "1vMMfei1N_NLJ53Hc0MkGmSEpAuHrbXdL"
-)
 
+def test_google_drive_upload_round_trip(
+    google_drive_test_folder_id,
+    google_token,
+):
+    """Передать тестовый файл в отдельную папку и сверить скачанную копию."""
+    run_id = uuid.uuid4().hex
+    marker = f"AVTOTEST_DLP_{run_id}"
+    file_name = f"avtotest-{run_id}.txt"
+    content = f"{TEST_FILE.read_text(encoding='utf-8')}\nRun marker: {marker}\n"
 
-def test_upload_files(google_token):
-    files = get_files(
-        TEST_FILES_DIR
-    )
-
-    for file_path in files:
-        upload_file(
+    logger.info("Starting Google Drive transfer test run %s", run_id)
+    with TemporaryDirectory() as temp_dir:
+        local_file = Path(temp_dir) / file_name
+        downloaded_file = Path(temp_dir) / "downloaded" / file_name
+        local_file.write_text(content, encoding="utf-8")
+        uploaded = upload_file(
             google_token,
-            file_path,
-            GOOGLE_DRIVE_FOLDER_ID,
+            local_file,
+            google_drive_test_folder_id,
+            file_name=file_name,
         )
+        try:
+            download_file(google_token, uploaded["id"], downloaded_file)
+            assert downloaded_file.read_text(encoding="utf-8") == content
+            logger.info(
+                "Google Drive round-trip passed; confirm DLP incident in the "
+                "ZGate incident console"
+            )
+        finally:
+            delete_file(google_token, uploaded["id"])

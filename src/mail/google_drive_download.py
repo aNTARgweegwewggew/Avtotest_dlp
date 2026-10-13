@@ -1,87 +1,64 @@
-import pytest
-import requests
+"""Поиск и скачивание файлов из Google Drive."""
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+import logging
+from pathlib import Path
+
+from src.mail.http_client import create_http_session
 
 
-GOOGLE_DRIVE_TOKEN_FILE = (
-    "/home/user/mail-dlp-automation/google_drive_token.json"
-)
-
-GOOGLE_DRIVE_SCOPES = [
-    "https://www.googleapis.com/auth/drive"
-]
-
-FILE_NAME = "12345.txt"
-
+logger = logging.getLogger(__name__)
 GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3/files"
 
 
-@pytest.fixture
-def google_token():
-    credentials = Credentials.from_authorized_user_file(
-        GOOGLE_DRIVE_TOKEN_FILE,
-        GOOGLE_DRIVE_SCOPES
-    )
+def find_file_id(access_token, file_name):
+    """Найти ID первого файла с таким именем, который не находится в корзине."""
+    escaped_name = file_name.replace("\\", "\\\\").replace("'", "\\'")
+    with create_http_session() as session:
+        response = session.get(
+            GOOGLE_DRIVE_API,
+            headers={"Authorization": f"Bearer {access_token}"},
+            params={
+                "q": f"name = '{escaped_name}' and trashed = false",
+                "fields": "files(id,name)",
+            },
+            timeout=(10, 30),
+        )
 
-    if not credentials.valid:
-        session = requests.Session()
-        session.verify = False
+    if response.status_code != 200:
+        raise RuntimeError(
+            "Google Drive file search returned unexpected "
+            f"HTTP {response.status_code}"
+        )
 
-        request = Request(session=session)
-
-        credentials.refresh(request)
-
-        with open(GOOGLE_DRIVE_TOKEN_FILE, "w") as file:
-            file.write(credentials.to_json())
-
-    return credentials.token
-
-
-def test_download_file(google_token):
-    session = requests.Session()
-    session.verify = False
-
-    # Ищем файл по имени
-    response = session.get(
-        GOOGLE_DRIVE_API,
-        headers={
-            "Authorization": f"Bearer {google_token}"
-        },
-        params={
-            "q": f"name = '{FILE_NAME}' and trashed = false",
-            "fields": "files(id,name)"
-        }
-    )
-
-    response.raise_for_status()
-
-    files = response.json()["files"]
-
+    logger.info("Google Drive file search completed: HTTP %s", response.status_code)
+    files = response.json().get("files", [])
     if not files:
-        raise RuntimeError(f"Файл не найден: {FILE_NAME}")
+        raise FileNotFoundError(f"Google Drive file was not found: {file_name}")
+    return files[0]["id"]
 
-    file_id = files[0]["id"]
 
-    print(f"Найден файл: {FILE_NAME}")
-    print(f"File ID: {file_id}")
+def download_file(access_token, file_id, destination):
+    """Скачать файл Google Drive по ID в указанный локальный путь."""
+    with create_http_session() as session:
+        response = session.get(
+            f"{GOOGLE_DRIVE_API}/{file_id}",
+            headers={"Authorization": f"Bearer {access_token}"},
+            params={"alt": "media"},
+            timeout=(10, 120),
+        )
 
-    # Скачиваем содержимое файла
-    response = session.get(
-        f"{GOOGLE_DRIVE_API}/{file_id}",
-        headers={
-            "Authorization": f"Bearer {google_token}"
-        },
-        params={
-            "alt": "media"
-        }
+    if response.status_code != 200:
+        raise RuntimeError(
+            "Google Drive file download returned unexpected "
+            f"HTTP {response.status_code}"
+        )
+
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(response.content)
+    logger.info(
+        "Google Drive file download completed: HTTP %s bytes=%s",
+        response.status_code,
+        len(response.content),
     )
-
-    response.raise_for_status()
-
-    # Сохраняем локально
-    with open(FILE_NAME, "wb") as file:
-        file.write(response.content)
-
-    print(f"Файл скачан: {FILE_NAME}")
+    return destination

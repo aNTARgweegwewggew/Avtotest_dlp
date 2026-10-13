@@ -1,66 +1,27 @@
+"""Проверки получения отправленных писем через IMAP и IMAPS."""
+
 import pytest
 
+from src.smtp.config import IMAP_TEST_PORTS, SMTP_TEST_PORTS
 from src.smtp.send_mail import send_email
-from src.smtp.read_mail_imap import (
-    connect_imap,
-    read_email_by_uuid,
-)
 
 
 @pytest.mark.parametrize(
-    "smtp_port, imap_port",
+    ("smtp_port", "imap_port"),
     [
-        (25, 143),
-        (25, 993),
-
-        (587, 143),
-        (587, 993),
-
-        pytest.param(
-            465,
-            143,
-            marks=pytest.mark.xfail(
-                reason="На Romeo отсутствует SMTP + SSL"
-            ),
-        ),
-
-        pytest.param(
-            465,
-            993,
-            marks=pytest.mark.xfail(
-                reason="На Romeo отсутствует SMTP + SSL"
-            ),
-        ),
+        (smtp_port, imap_port)
+        for smtp_port in SMTP_TEST_PORTS
+        for imap_port in IMAP_TEST_PORTS
     ],
 )
-def test_smtp_imap(
-    mailbox,
-    smtp_port,
-    imap_port,
-):
+def test_imap_read(smtp_port, imap_port, find_received_email):
+    """Отправить письмо и проверить его текст при чтении через IMAP."""
+    unique_id = send_email(smtp_port)
+    message = find_received_email("imap", imap_port, unique_id)
 
-    uuid = send_email(smtp_port)
-
-    server = connect_imap(imap_port)
-
-    try:
-        found = read_email_by_uuid(
-            server,
-            uuid,
-        )
-    finally:
-        server.logout()
-
-    assert found is not None
-
-    body = found.get_body(
-        preferencelist=("plain",)
-    )
-
+    assert message is not None
+    body = message.get_body(preferencelist=("plain",))
     assert body is not None
-
-    text = body.get_content()
-
-    assert text.strip() == (
-        f"Отправка текста test #{uuid}"
+    assert body.get_content().strip() == (
+        f"Отправка текста test #{unique_id}"
     )

@@ -1,4 +1,8 @@
+"""Поиск файлов тестовых данных в указанной папке."""
+
+
 def get_files(directory):
+    """Найти все файлы в папке и вернуть их в отсортированном порядке."""
     if not directory.exists():
         raise RuntimeError(
             f"Папка не существует: {directory}"
@@ -11,7 +15,7 @@ def get_files(directory):
 
     files = [
         path
-        for path in directory.iterdir()
+        for path in directory.rglob("*")
         if path.is_file()
     ]
 

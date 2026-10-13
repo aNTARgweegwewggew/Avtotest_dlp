@@ -1,3 +1,5 @@
+"""Вспомогательная отправка писем с произвольным текстом и вложениями."""
+
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -6,7 +8,7 @@ import os
 import smtplib
 
 def send_email(email_body,email_subject,email_from,email_to,smtp_ip,attachment = None):
-  
+    """Отправить письмо через SMTP и вернуть результат отправки."""
     msg = MIMEMultipart()
     msg["Subject"] = email_subject
     msg["From"] = email_from
@@ -39,4 +41,3 @@ def send_email(email_body,email_subject,email_from,email_to,smtp_ip,attachment =
         print(f"Отправлено сообщение")
 
     return True
-
