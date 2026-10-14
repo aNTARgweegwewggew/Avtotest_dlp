@@ -80,6 +80,11 @@ def _read_yandex_token_file(token_file):
             f"Не удалось прочитать файл токена Яндекса ({type(error).__name__})"
         ) from None
 
+    if not isinstance(token_data, dict):
+        raise RuntimeError(
+            "Файл токена Яндекса должен содержать JSON-объект"
+        )
+
     access_token = token_data.get("access_token")
     refresh_token = token_data.get("refresh_token")
     if not access_token or not refresh_token:
@@ -208,6 +213,45 @@ def yandex_token():
 
     logger.info("OAuth-токен Яндекс.Диска проверен")
     return SecretString(token_data["access_token"])
+
+
+@pytest.fixture
+def yandex_mail_token():
+    """Прочитать OAuth-токен для SMTP-отправки через Яндекс.Почту."""
+    configured_path = os.getenv("YANDEX_MAIL_TOKEN_FILE")
+    if not configured_path:
+        pytest.skip(
+            "Задайте YANDEX_MAIL_TOKEN_FILE, чтобы включить тесты Яндекс.Почты"
+        )
+
+    token_file = Path(configured_path).expanduser()
+    if not token_file.is_absolute():
+        token_file = PROJECT_ROOT / token_file
+    if not token_file.is_file():
+        raise FileNotFoundError(
+            f"Не найден файл OAuth-токена Яндекс.Почты: {token_file}"
+        )
+
+    try:
+        token_data = json.loads(token_file.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(
+            "Не удалось прочитать файл OAuth-токена Яндекс.Почты "
+            f"({type(error).__name__})"
+        ) from None
+
+    if not isinstance(token_data, dict):
+        raise RuntimeError(
+            "Файл OAuth-токена Яндекс.Почты должен содержать JSON-объект"
+        )
+
+    access_token = token_data.get("access_token")
+    if not access_token:
+        raise RuntimeError(
+            "В файле OAuth-токена Яндекс.Почты отсутствует access_token"
+        )
+
+    return SecretString(access_token)
 
 
 @pytest.fixture

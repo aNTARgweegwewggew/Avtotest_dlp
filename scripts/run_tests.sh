@@ -6,7 +6,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
 
 usage() {
-    printf 'Использование: %s {quick|google|cloud|mail|all}\n' "$0" >&2
+    printf 'Использование: %s {quick|google|cloud|mail|yandex-mail|all}\n' "$0" >&2
 }
 
 if [[ $# -ne 1 ]]; then
@@ -29,6 +29,9 @@ case "$1" in
         ;;
     mail)
         test_paths=(tests/smtp)
+        ;;
+    yandex-mail)
+        test_paths=(tests/smtp/test_yandex_mail.py)
         ;;
     all)
         test_paths=(tests)

@@ -25,7 +25,10 @@ DLP_TEST_MARKER = "secret password"
 
 
 def build_test_email_body(unique_id, include_dlp_marker=False):
-    """Собрать текст письма с ID теста и необязательным DLP-маркером."""
+    """Сформировать текст письма с ID тестового запуска.
+
+    Если include_dlp_marker=True, добавить в начало маркер secret password.
+    """
     body = f"Отправка текста test #{unique_id}"
     if include_dlp_marker:
         return f"{DLP_TEST_MARKER}\n{body}"
@@ -33,7 +36,11 @@ def build_test_email_body(unique_id, include_dlp_marker=False):
 
 
 def send_email(port, attachment=None, include_dlp_marker=False):
-    """Отправить тестовое письмо и вернуть его уникальный ID."""
+    """Отправить письмо через общий SMTP-стенд и вернуть его уникальный ID.
+
+    attachment задаёт папку с файлами, которые нужно приложить к письму.
+    include_dlp_marker включает текст, предназначенный для проверки DLP.
+    """
     validate_mail_config()
     unique_id = uuid.uuid4().hex[:12]
     email_body = build_test_email_body(
