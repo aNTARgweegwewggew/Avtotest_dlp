@@ -14,3 +14,6 @@ google-auth-oauthlib==1.4.1
 
 # --- PostgreSQL ---
 psycopg2-binary==2.9.12
+
+# --- Telegram user account API ---
+Telethon>=1.36,<2

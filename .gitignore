@@ -4,6 +4,10 @@
 credentials.json
 *_token.json
 token.json
+*.session
+*.session-journal
+*.session-wal
+*.session-shm
 *.json.tmp
 secrets.json
 *.pem
@@ -19,7 +23,6 @@ __pycache__/
 .coverage
 htmlcov/
 .tox/
-artifacts/test-runs/
 
 # === Виртуальное окружение ===
 .venv/
