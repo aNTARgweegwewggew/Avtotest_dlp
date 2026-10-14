@@ -1,22 +1,28 @@
-"""Простая проверка отправки сообщения Telegram."""
+
+"""Smoke-тест отправки сообщения через Telegram."""
+
+import os
+from uuid import uuid4
 
 import pytest
 
-from src.telegram import send_message as telegram_sender
+from src.telegram.send_message  import send_message
 
 
-TELEGRAM_TEST_USERNAME = "@replace_with_test_username"
-TELEGRAM_TEST_MESSAGE = "Проверка отправки сообщения автотестом"
-
-
+@pytest.mark.integration
 def test_send_message_to_test_user():
-    """Отправить реальное тестовое сообщение указанному пользователю."""
-    if TELEGRAM_TEST_USERNAME == "@replace_with_test_username":
-        pytest.skip("Укажи Telegram-получателя в TELEGRAM_TEST_USERNAME")
+    """Отправить уникальное сообщение тестовому пользователю."""
+    username = os.getenv("TELEGRAM_TEST_USERNAME")
 
-    message_id = telegram_sender.send_message(
-        TELEGRAM_TEST_USERNAME,
-        TELEGRAM_TEST_MESSAGE,
+    if not username:
+        pytest.skip("Не задан TELEGRAM_TEST_USERNAME в .env")
+
+    message = f"Проверка отправки DLP автотестом #{uuid4().hex[:8]}"
+
+    message_id = send_message(
+        username=username,
+        message=message,
     )
 
+    assert isinstance(message_id, int)
     assert message_id > 0
