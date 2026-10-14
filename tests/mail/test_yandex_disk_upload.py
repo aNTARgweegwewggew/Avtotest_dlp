@@ -2,39 +2,12 @@
 
 from contextlib import contextmanager
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 import requests
 
 from src.mail import yanex_disk_upload
-
-
-class FakeResponse:
-    """Имитировать успешный ответ загрузчика Яндекс.Диска."""
-
-    status_code = 201
-    ok = True
-
-
-class FakeSession:
-    """Запомнить PUT-запрос, не обращаясь к реальному сервису."""
-
-    def __init__(self):
-        self.request = None
-
-    def __enter__(self):
-        """Вернуть подменённую HTTP-сессию."""
-        return self
-
-    def __exit__(self, *_exc_info):
-        """Закрыть подменённую HTTP-сессию без подавления ошибок."""
-        return False
-
-    def put(self, url, **kwargs):
-        """Сохранить тело запроса и вернуть успешный ответ."""
-        self.request = {"url": url, **kwargs}
-        self.request["body"] = kwargs["data"].read()
-        return FakeResponse()
 
 
 def test_upload_file_sends_raw_file_body(
@@ -45,7 +18,16 @@ def test_upload_file_sends_raw_file_body(
     file_path = tmp_path / "test.txt"
     content = b"synthetic DLP test file"
     file_path.write_bytes(content)
-    session = FakeSession()
+    session = Mock()
+    response = Mock(status_code=201, ok=True)
+    request = {}
+
+    def record_put(url, **kwargs):
+        request.update({"url": url, **kwargs})
+        request["body"] = kwargs["data"].read()
+        return response
+
+    session.put.side_effect = record_put
 
     @contextmanager
     def fake_http_session():
@@ -69,7 +51,6 @@ def test_upload_file_sends_raw_file_body(
         "/DLP_AUTOTEST/test.txt",
     )
 
-    request = session.request
     assert status == 201
     assert request["body"] == content
     assert "files" not in request
@@ -81,20 +62,11 @@ def test_delete_path_retries_network_errors(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """Проверить повтор удаления папки после временной сетевой ошибки."""
-
-    class RetrySession(FakeSession):
-        """Имитировать тайм-аут перед успешным удалением."""
-
-        delete_attempts = 0
-
-        def delete(self, *_args, **_kwargs):
-            """Вернуть успешный ответ после одного тайм-аута."""
-            self.delete_attempts += 1
-            if self.delete_attempts == 1:
-                raise requests.ReadTimeout
-            return type("Response", (), {"status_code": 204})()
-
-    session = RetrySession()
+    session = Mock()
+    session.delete.side_effect = [
+        requests.ReadTimeout(),
+        Mock(status_code=204),
+    ]
 
     @contextmanager
     def fake_http_session():
@@ -110,4 +82,4 @@ def test_delete_path_retries_network_errors(
 
     yanex_disk_upload.delete_path("test-token", "/DLP_AUTOTEST/run-test")
 
-    assert session.delete_attempts == 2
+    assert session.delete.call_count == 2

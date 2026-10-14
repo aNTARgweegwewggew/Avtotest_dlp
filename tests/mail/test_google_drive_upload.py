@@ -2,42 +2,11 @@
 
 from contextlib import contextmanager
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
 from src.mail import google_drive_upload
-
-
-class FakeResponse:
-    """Поддельный успешный ответ Google Drive."""
-
-    status_code = 201
-
-    @staticmethod
-    def json():
-        """Вернуть ID файла из ответа на загрузку."""
-        return {"id": "synthetic-file-id"}
-
-
-class FakeSession:
-    """Запомнить HTTP-запрос без обращения к Google Drive."""
-
-    def __init__(self):
-        self.request = None
-
-    def __enter__(self):
-        """Вернуть подменённую HTTP-сессию."""
-        return self
-
-    def __exit__(self, *_exc_info):
-        """Закрыть подменённую сессию, не скрывая исключения."""
-        return False
-
-    def post(self, url, **kwargs):
-        """Сохранить параметры и тело запроса, затем вернуть тестовый ответ."""
-        self.request = {"url": url, **kwargs}
-        self.request["body"] = kwargs["data"]
-        return FakeResponse()
 
 
 def test_upload_file_sends_authorized_single_request_with_complete_body(
@@ -48,11 +17,14 @@ def test_upload_file_sends_authorized_single_request_with_complete_body(
     local_file = tmp_path / "dlp-sample.txt"
     content = b"secret password"
     local_file.write_bytes(content)
-    session = FakeSession()
+    session = Mock()
+    response = Mock(status_code=201)
+    response.json.return_value = {"id": "synthetic-file-id"}
+    session.post.return_value = response
 
     @contextmanager
     def fake_http_session():
-        """Подменить сетевую сессию локальным объектом-перехватчиком."""
+        """Подменить сетевую сессию для локальной проверки запроса."""
         yield session
 
     monkeypatch.setattr(
@@ -67,12 +39,12 @@ def test_upload_file_sends_authorized_single_request_with_complete_body(
         "test-folder-id",
     )
 
-    request = session.request
+    request = session.post.call_args.kwargs
     assert result["id"] == "synthetic-file-id"
     assert request["params"] == {"uploadType": "multipart"}
     assert request["headers"]["Authorization"] == "Bearer test-access-token"
     assert request["headers"]["Content-Type"].startswith("multipart/related; boundary=")
-    assert len(request["body"]) == int(request["headers"]["Content-Length"])
-    assert b'"name":"dlp-sample.txt"' in request["body"]
-    assert b'"parents":["test-folder-id"]' in request["body"]
-    assert content in request["body"]
+    assert len(request["data"]) == int(request["headers"]["Content-Length"])
+    assert b'"name":"dlp-sample.txt"' in request["data"]
+    assert b'"parents":["test-folder-id"]' in request["data"]
+    assert content in request["data"]
