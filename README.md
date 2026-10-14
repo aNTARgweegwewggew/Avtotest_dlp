@@ -58,6 +58,17 @@ PROJECT_DIR="$HOME/dlp-tests" bash start_tests.sh
 .venv/bin/python -m pytest -v tests/telegram
 ```
 
+Если проект клонировали вручную и файла `.env` ещё нет, создай его из шаблона
+и редактируй настройки только в `.env`:
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Тестовый код читает значения из `.env`; не вставляй логины, получателей или
+ключи прямо в `.py` файлы. `.env.example` — только шаблон без рабочих секретов.
+
 `PASSED` означает, что проверки пройдены. `SKIPPED` означает, что для теста
 не задан обязательный сервис или токен. `FAILED` означает, что тест не прошёл;
 причина будет указана в выводе.
@@ -192,13 +203,9 @@ PostgreSQL `DB_HOST`, `DB_NAME`, `DB_USER` и `DB_PASSWORD`.
 
 1. Выполните первый запуск проекта по инструкции выше. Скрипт сам установит
    зависимости и создаст `.env`.
-2. Откройте `.env` в папке проекта и заполните Telegram-поля:
-
-   ```dotenv
-   TELEGRAM_API_ID=ваш_api_id
-   TELEGRAM_API_HASH=ваш_api_hash
-   TELEGRAM_TEST_USERNAME=@username_тестового_получателя
-   ```
+2. Открой `.env` в папке проекта и заполни `TELEGRAM_API_ID`,
+   `TELEGRAM_API_HASH` и `TELEGRAM_TEST_USERNAME` реальными значениями.
+   Эти настройки задаются только в `.env`, не в Python-коде.
 
    `API ID` и `API hash` создаются на
    [my.telegram.org](https://my.telegram.org). Если сайт недоступен без VPN,
