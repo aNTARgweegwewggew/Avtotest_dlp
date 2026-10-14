@@ -10,6 +10,8 @@ from telethon.sync import TelegramClient
 
 # Корень проекта: два уровня выше этого файла
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SESSION_DIRECTORY = PROJECT_ROOT / "secrets"
+SESSION_PATH = SESSION_DIRECTORY / "telegram_user"
 
 # Загружаем настройки из .env в корне проекта
 load_dotenv(PROJECT_ROOT / ".env")
@@ -31,12 +33,9 @@ def create_telegram_client() -> TelegramClient:
     except ValueError as error:
         raise ValueError("TELEGRAM_API_ID должен быть целым числом") from error
 
-    session_dir = PROJECT_ROOT / "secrets"
-    session_dir.mkdir(parents=True, exist_ok=True)
-
-    session_path = session_dir / "telegram_user"
-
-    return TelegramClient(str(session_path), api_id, api_hash)
+    SESSION_DIRECTORY.mkdir(parents=True, exist_ok=True, mode=0o700)
+    SESSION_DIRECTORY.chmod(0o700)
+    return TelegramClient(str(SESSION_PATH), api_id, api_hash)
 
 
 def send_message(username: str, message: str) -> int:
@@ -50,7 +49,14 @@ def send_message(username: str, message: str) -> int:
     client = create_telegram_client()
 
     try:
-        client.start()
+        client.connect()
+        if not client.is_user_authorized():
+            raise RuntimeError(
+                "Telegram-сессия не авторизована. Сначала выполни "
+                "`.venv/bin/python -m src.telegram.authorize` "
+                "в интерактивном терминале."
+            )
+
         sent_message = client.send_message(username.strip(), message)
         return sent_message.id
     finally:

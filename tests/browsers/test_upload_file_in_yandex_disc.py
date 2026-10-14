@@ -5,8 +5,13 @@ import uuid
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
+
 from src.mail.yanex_disk_upload import upload_file
 from src.mail.yandex_disk_download import download_file
+
+
+pytestmark = pytest.mark.integration
 
 
 logger = logging.getLogger(__name__)

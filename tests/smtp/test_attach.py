@@ -8,6 +8,9 @@ from src.smtp.config import IMAP_TEST_PORTS, POP3_TEST_PORTS, SMTP_TEST_PORTS
 from src.smtp.send_mail import send_email
 
 
+pytestmark = pytest.mark.integration
+
+
 TEST_DATA = Path(__file__).resolve().parents[1] / "data" / "mail"
 SINGLE_ATTACHMENT_FOLDER = TEST_DATA / "single"
 MULTIPLE_ATTACHMENTS_FOLDER = TEST_DATA / "multiple"

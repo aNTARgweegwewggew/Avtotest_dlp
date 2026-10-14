@@ -8,6 +8,9 @@ import pytest
 from src.mail.search import search_google
 
 
+pytestmark = pytest.mark.integration
+
+
 @pytest.mark.skipif(
     os.getenv("RUN_GOOGLE_SEARCH_TESTS") != "1",
     reason="Set RUN_GOOGLE_SEARCH_TESTS=1 to run the external Google search check",

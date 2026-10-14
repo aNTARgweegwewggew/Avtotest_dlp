@@ -47,7 +47,7 @@ def _create_fake_smtp():
 
 
 def test_sends_text_using_yandex_oauth(monkeypatch):
-    """Проверить отправку текста и передачу токена в XOAUTH2."""
+    """Проверить отправку письма с корректной авторизацией XOAUTH2."""
     _configure_yandex_mail(monkeypatch, 465)
     smtp, auth, messages = _create_fake_smtp()
     monkeypatch.setattr(yandex_mail.smtplib, "SMTP_SSL", lambda *_a, **_k: smtp)
@@ -55,10 +55,10 @@ def test_sends_text_using_yandex_oauth(monkeypatch):
     unique_id = yandex_mail.send_yandex_test_email("test-access-token")
 
     assert auth["mechanism"] == "XOAUTH2"
-    assert auth["response"].startswith(
-        "user=sender@example.test\x01auth=Bearer test-access-token"
+    assert auth["response"] == (
+        "user=sender@example.test\x01"
+        "auth=Bearer test-access-token\x01\x01"
     )
-    assert auth["response"].endswith("\x01\x01")
     assert messages[0]["To"] == "recipient@example.test"
     assert _message_body(messages[0]) == (
         f"secret password\nОтправка текста test #{unique_id}"

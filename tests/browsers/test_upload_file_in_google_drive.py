@@ -5,8 +5,13 @@ import uuid
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
+
 from src.mail.google_drive_download import download_file
 from src.mail.google_drive_upload import delete_file, upload_file
+
+
+pytestmark = pytest.mark.integration
 
 
 logger = logging.getLogger(__name__)

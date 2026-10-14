@@ -10,6 +10,7 @@ from src.smtp.send_mail import build_test_email_body, send_email
 
 
 logger = logging.getLogger(__name__)
+pytestmark = pytest.mark.integration
 
 
 @pytest.mark.parametrize("smtp_port", SMTP_TEST_PORTS)

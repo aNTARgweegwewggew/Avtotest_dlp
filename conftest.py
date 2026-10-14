@@ -263,6 +263,8 @@ def google_token():
         if configured_path
         else PROJECT_ROOT / "google_drive_token.json"
     )
+    if not token_file.is_absolute():
+        token_file = PROJECT_ROOT / token_file
     if not token_file.is_file():
         pytest.skip(
             "Задайте GOOGLE_DRIVE_TOKEN_FILE с OAuth-токеном Google Drive"

@@ -1,4 +1,4 @@
-"""Локальные проверки формирования multipart-запроса Google Drive."""
+"""Локальная проверка формирования multipart-запроса Google Drive."""
 
 from contextlib import contextmanager
 from pathlib import Path
@@ -9,11 +9,11 @@ import pytest
 from src.mail import google_drive_upload
 
 
-def test_upload_file_sends_authorized_single_request_with_complete_body(
+def test_upload_file_sends_authorized_request_with_complete_body(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """Проверить единый запрос с метаданными, файлом и авторизацией OAuth."""
+    """Проверить OAuth-заголовок и тело запроса загрузки файла."""
     local_file = tmp_path / "dlp-sample.txt"
     content = b"secret password"
     local_file.write_bytes(content)
@@ -24,7 +24,6 @@ def test_upload_file_sends_authorized_single_request_with_complete_body(
 
     @contextmanager
     def fake_http_session():
-        """Подменить сетевую сессию для локальной проверки запроса."""
         yield session
 
     monkeypatch.setattr(
@@ -43,7 +42,9 @@ def test_upload_file_sends_authorized_single_request_with_complete_body(
     assert result["id"] == "synthetic-file-id"
     assert request["params"] == {"uploadType": "multipart"}
     assert request["headers"]["Authorization"] == "Bearer test-access-token"
-    assert request["headers"]["Content-Type"].startswith("multipart/related; boundary=")
+    assert request["headers"]["Content-Type"].startswith(
+        "multipart/related; boundary="
+    )
     assert len(request["data"]) == int(request["headers"]["Content-Length"])
     assert b'"name":"dlp-sample.txt"' in request["data"]
     assert b'"parents":["test-folder-id"]' in request["data"]

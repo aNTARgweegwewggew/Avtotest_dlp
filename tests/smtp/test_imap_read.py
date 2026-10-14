@@ -6,6 +6,9 @@ from src.smtp.config import IMAP_TEST_PORTS, SMTP_TEST_PORTS
 from src.smtp.send_mail import send_email
 
 
+pytestmark = pytest.mark.integration
+
+
 @pytest.mark.parametrize(
     ("smtp_port", "imap_port"),
     [

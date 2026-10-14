@@ -2,9 +2,14 @@
 
 from pathlib import Path
 
+import pytest
+
 from src.database.database import get_email_body_from_db
 from src.mail.yandex_mail import send_yandex_test_email
 from src.smtp.send_mail import build_test_email_body
+
+
+pytestmark = pytest.mark.integration
 
 
 MAIL_FILES = Path(__file__).resolve().parents[1] / "data" / "mail"
