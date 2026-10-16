@@ -50,3 +50,23 @@ def test_send_file_to_test_user():
 
     assert isinstance(message_id, int)
     assert message_id > 0
+
+def test_send_voice_to_test_user():
+    """Отправить уникальное файл тестовому пользователю."""
+    username = os.getenv("TELEGRAM_TEST_USERNAME")
+
+    if not username:
+        pytest.skip(
+            "Telegram-тест отключён: укажи TELEGRAM_TEST_USERNAME "
+            "в .env (шаблон настроек — .env.example)"
+        )
+
+    path_to_folder = "/home/user/telegram_test/test_voice/output.ogg"
+
+    message_id = send_file(
+        username=username,
+        path_to_file=path_to_folder,
+    )
+
+    assert isinstance(message_id, int)
+    assert message_id > 0

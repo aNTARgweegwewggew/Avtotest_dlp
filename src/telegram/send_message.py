@@ -84,3 +84,25 @@ def send_file(username,path_to_file):
     finally:
             client.disconnect()
     
+def send_voice(username,path_to_voice):
+    if not username or not username.strip():
+        raise ValueError("Укажи username получателя Telegram")
+    
+    if not path_to_voice or not path_to_voice.strip():
+        raise ValueError("Текст сообщения не должен быть пустым")
+    
+    client = create_telegram_client()
+
+    try:
+        client.connect()
+        if not client.is_user_authorized():
+            raise RuntimeError(
+                "Telegram-сессия не авторизована. Сначала выполни "
+                "`.venv/bin/python -m src.telegram.authorize` "
+                "в интерактивном терминале."
+            )
+    
+        sent_message = client.send_file(username.strip(),path_to_voice, voice_note=True)
+        return sent_message.id
+    finally:
+            client.disconnect()    
